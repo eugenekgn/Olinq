@@ -1,0 +1,66 @@
+<html>
+
+</html>
+
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+<script type="text/javascript" src="js/olinq.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function()
+{
+
+	var olinq = new Olinq();
+	console.log('1.example of where and top');
+	var queryString = olinq
+		.from('IwofRecords')
+		.where('Priority','nend',1)
+		.top(10)
+		.toString();
+	console.log(queryString);
+
+	console.log('2.example of where, and, orderby');
+	queryString = olinq
+		.from('IwofRecords')
+		.where('Priority','nend',1)
+		.and()
+		.where('Score','ne', 100)
+		.orderby('Priority','desc')
+		.toString();
+	console.log(queryString);
+	
+
+	console.log('3. select with one word');
+	queryString = olinq
+		.from('IwofRecords')
+		.select('Priority')
+		.toString();
+	
+	console.log(queryString);
+
+	console.log('4. select with collection');
+	queryString = olinq
+		.from('IwofRecords')
+		.select(['Priority', 'Block'])
+		.toString();
+	
+	console.log(queryString);
+
+
+	console.log('5. expand');
+	queryString = olinq
+		.from('IwofRecords')
+		.expand('Priority')
+		.toString();
+	
+	console.log(queryString);
+
+	console.log('6. query example');
+	queryString = olinq
+		.from('IwofRecords')
+		.expand('Priority')
+		.toString();
+	
+	console.log(queryString);
+
+});
+</script>
