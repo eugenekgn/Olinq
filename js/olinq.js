@@ -3,9 +3,9 @@ var Olinq = function () {
 };
 
 
-
 Olinq.prototype = function () {
   var queryBuilder = '',
+  whereCondition = '',
   clear = function () {
     queryBuilder = '';
   },
@@ -22,7 +22,7 @@ Olinq.prototype = function () {
   //    gt   – Greater than 
   //    ge   – Greater than or equal to
   //    endswith - endswith 
-  //    nend - Not Ends with
+  //    not endswith - Not Ends with
   //    substringof - substringof
   // value: value to compare
   where = function (param, operator, value) {
@@ -36,54 +36,42 @@ Olinq.prototype = function () {
       throw 'value is null or empty';
     }
 
-    if (queryBuilder.indexOf('$filter') == -1) {
-      queryBuilder += '$filter=';
+    if (whereCondition.indexOf('$filter') == -1) {
+      whereCondition += '$filter=';
     }
 
-    switch (operator) {
-      case 'eq':
-      case '=':
-        queryBuilder += (param + ' eq ' + applyAlphaWrapper(value));
-        break;
-      case 'ne':
-      case '!=':
-        queryBuilder += (param + ' ne ' + applyAlphaWrapper(value));
-        break;
-      case 'gt':
-      case '>':
-        queryBuilder += (param + param + ' gt ' + applyAlphaWrapper(value));
-        break;
-      case 'ge':
-        queryBuilder += (param + ' ge ' + applyAlphaWrapper(value));
-        break;
-      case 'lt':
-      case '<':
-        queryBuilder += (param + ' ne ' + applyAlphaWrapper(value));
-        break;
-      case 'nend':
-        queryBuilder += ('not endswith(' + param + ',' + applyAlphaWrapper(value) + ')');
-        break;
-      case 'substringof':
-        queryBuilder += ('substringof(' + param + ',' + applyAlphaWrapper(value) + ')');
-        break;
-      case 'substringof':
-        queryBuilder += ('endswith(' + param + ',' + applyAlphaWrapper(value) + ')');
-        break;
-      case 'startswith':
-        queryBuilder += ('startswith(' + param + ',' + applyAlphaWrapper(value) + ')');
-        break;
-      default:
-        throw 'Invalid operator provided';
-    };
+    var collection = param.split(',');
+    var conditionals = '';
+    if(collection.length > 0){
+       console.log('col' + collection);
+       param = collection[0];
+       for (var i=1; i<collection.length; i++)
+       { 
+          // pad number of letter
+          var col = collection[i].split(' ');
+          col[2] = applyAlphaWrapper(col[2]);
+          console.log(col);  
+          collection[i] = col[0] + ' ' + col[1] + ' ' + col[2];
+          conditionals += (' and c/' + collection[i]);
+       }
+     }
 
+    // check for nested objects
+    collection = param.split('.');
+    if(collection.length > 1){
+      param = ' c/' + collection[1] + ')' + conditionals;
+      whereCondition += (collection[0] + '/any(c: ');
+    }
+
+    whereBuilder(param, operator, value);
     return this;
   },
   and = function () {
-    queryBuilder += ' and ';
+    whereCondition += ' and ';
     return this;
   },
   or = function () {
-    queryBuilder += ' or ';
+    whereCondition += ' or ';
     return this;
   },
     //The maximum number of items returned in the result set for each page.
@@ -98,7 +86,7 @@ Olinq.prototype = function () {
     queryBuilder += '$skip=' + num;
     return this;
   },
-  // direction: desc or asc
+  // direction: desc or as
   orderby = function (param, direction) {
     checkIfEndsWithAmp(true);
     queryBuilder += '$orderby=' + param + ' ' + direction;
@@ -127,8 +115,17 @@ Olinq.prototype = function () {
     return this;
   },
   toString = function () {
-    var res = queryBuilder;
-    queryBuilder = '';
+
+    if (whereCondition.match(" and $")) {
+      whereCondition = whereCondition.substring(0, whereCondition.length - 5);
+    }
+    else if (whereCondition.match(" or $")) {
+      whereCondition = whereCondition.substring(0, whereCondition.length - 4);
+    }
+    var res = queryBuilder + ((queryBuilder.length > 0) ? "&" : "") + whereCondition;
+
+    queryBuilder = whereCondition = '';
+
     return res;
   };
   //private methods
@@ -151,6 +148,44 @@ Olinq.prototype = function () {
       return '\'' + value + '\'';
     }
     return value;
+  },
+  whereBuilder = function(param, operator,value){
+        switch (operator) {
+      case 'eq':
+      case '=':
+        whereCondition += (param + ' eq ' + applyAlphaWrapper(value));
+        break;
+      case 'ne':
+      case '!=':
+        whereCondition += (param + ' ne ' + applyAlphaWrapper(value));
+        break;
+      case 'gt':
+      case '>':
+        whereCondition += (param + param + ' gt ' + applyAlphaWrapper(value));
+        break;
+      case 'ge':
+        whereCondition += (param + ' ge ' + applyAlphaWrapper(value));
+        break;
+      case 'lt':
+      case '<':
+        whereCondition += (param + ' ne ' + applyAlphaWrapper(value));
+        break;
+      case 'notendswith':
+        whereCondition += ('not endswith(' + param + ',' + applyAlphaWrapper(value) + ')');
+        break;
+      case 'substringof':
+        whereCondition += ('substringof(' + applyAlphaWrapper(value) + ',' + param + ')');
+        break;
+      case 'substringof':
+        whereCondition += ('endswith(' + param + ',' + applyAlphaWrapper(value) + ')');
+        break;
+      case 'startswith':
+        whereCondition += ('startswith(' + param + ',' + applyAlphaWrapper(value) + ')');
+        break;
+      default:
+        throw 'Invalid operator provided ( ' + operator + ' )';
+      }
+    
   };
 
   return {
@@ -168,4 +203,5 @@ Olinq.prototype = function () {
     where: where
   }
 }();
+
 
